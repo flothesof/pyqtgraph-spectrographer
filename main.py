@@ -10,8 +10,22 @@ import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 from src.microphone import MicrophoneRecorder
 
+
+def generatePgColormap(cm_name):
+    """Converts a matplotlib colormap to a pyqtgraph colormap.
+
+    See https://github.com/pyqtgraph/pyqtgraph/issues/561 for source."""
+    colormap = plt.get_cmap(cm_name)
+    colormap._init()
+    lut = (colormap._lut * 255).view(np.ndarray)  # Convert matplotlib colormap from 0-1 to 0 -255 for Qt
+    return lut
+
+
 CHUNKSIZE = 1024
 SAMPLE_RATE = 44100
+TIME_VECTOR = np.arange(CHUNKSIZE) / SAMPLE_RATE
+N_FFT = 2048
+FREQ_VECTOR = np.fft.rfftfreq(N_FFT, d=TIME_VECTOR[1] - TIME_VECTOR[0])
 
 recorder = MicrophoneRecorder(sample_rate=SAMPLE_RATE, chunksize=CHUNKSIZE)
 recorder.start()
@@ -22,25 +36,20 @@ win.setWindowTitle('pyqtgraph spectrographer')
 
 waveform_plot = win.addPlot(title="Waveform")
 waveform_plot.showGrid(x=True, y=True)
+waveform_plot.enableAutoRange('xy', False)
+waveform_plot.setXRange(TIME_VECTOR.min(), TIME_VECTOR.max())
+waveform_plot.setYRange(-2 ** 15 + 1, 2 ** 15)
 curve = waveform_plot.plot(pen='y')
-
-ptr = 0
-TIME_VECTOR = np.arange(CHUNKSIZE) / SAMPLE_RATE
 
 
 def update_waveform():
     global curve, data, ptr, waveform_plot, recorder
     frames = recorder.get_frames()
     if len(frames) == 0:
-        data = np.zeros((recorder.chunksize), dtype=np.int)
+        data = np.zeros((recorder.chunksize,), dtype=np.int)
     else:
         data = frames[-1]
         curve.setData(x=TIME_VECTOR, y=data)
-        if ptr % 100 == 0:
-            waveform_plot.enableAutoRange('xy', True)
-        else:
-            waveform_plot.enableAutoRange('xy', False)
-        ptr += 1
 
 
 timer = QtCore.QTimer()
@@ -51,23 +60,19 @@ win.nextRow()
 
 fft_plot = win.addPlot(title='FFT plot')
 fft_curve = fft_plot.plot(pen='y')
-
-N_FFT = 2048
-FREQ_VECTOR = np.fft.rfftfreq(N_FFT, d=TIME_VECTOR[1] - TIME_VECTOR[0])
+fft_plot.enableAutoRange('xy', False)
+fft_plot.setXRange(FREQ_VECTOR.min(), FREQ_VECTOR.max())
+fft_plot.setYRange(0, 2 ** 14 * CHUNKSIZE)
 
 waterfall_data = deque(maxlen=1000)
 
 
 def update_fft():
-    global data, fft_curve, ptr, fft_plot
+    global data, fft_curve, fft_plot
     if data.max() > 1:
         X = np.abs(np.fft.rfft(data, n=N_FFT))
         fft_curve.setData(x=FREQ_VECTOR, y=X)
-        waterfall_data.append(np.log10(X))
-        if ptr % 100 == 0:
-            fft_plot.enableAutoRange('xy', True)
-        else:
-            fft_plot.enableAutoRange('xy', False)
+        waterfall_data.append(np.log10(X + 1e-12))
 
 
 timer_fft = QtCore.QTimer()
@@ -81,24 +86,26 @@ waterfall_plot = win.addPlot(title='Waterfall plot')
 waterfall_image = pg.ImageItem()
 waterfall_plot.addItem(waterfall_image)
 waterfall_image.setImage(image_data)
-
-cmap = plt.get_cmap('rainbow')
-LUT = pg.makeARGB(np.array([cmap(val) for val in np.linspace(0, 1, num=256)]), levels=(0, 1))
-
+lut = generatePgColormap('viridis')
+waterfall_image.setLookupTable(lut)
+# set scale: x in seconds, y in Hz
+waterfall_image.scale(CHUNKSIZE / SAMPLE_RATE, FREQ_VECTOR.max() / CHUNKSIZE)
 
 def update_waterfall():
-    global waterfall_data, waterfall_image, LUT
+    global waterfall_data, waterfall_image
     arr = np.c_[waterfall_data]
     if arr.ndim == 1:
         arr = arr[:, np.newaxis]
-    waterfall_image.setImage(arr, levels=(0, np.log10(N_FFT)))
+    max = arr.max()
+    min = max / 10
+    waterfall_image.setImage(arr, levels=(min, max))
 
 
 timer_waterfall = QtCore.QTimer()
 timer_waterfall.timeout.connect(update_waterfall)
 timer_waterfall.start(100)
 
-## Start Qt event loop unless running in interactive mode or using pyside.
+# Start Qt event loop unless running in interactive mode or using pyside.
 if __name__ == '__main__':
     import sys
 

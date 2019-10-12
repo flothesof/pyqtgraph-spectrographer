@@ -54,8 +54,10 @@ class MicrophoneRecorder(object):
 
 
 if __name__ == '__main__':
+    # short recording to test that everything works as expected
     import time
     import matplotlib.pyplot as plt
+
     recorder = MicrophoneRecorder()
     recorder.start()
     print('recording')
@@ -65,4 +67,3 @@ if __name__ == '__main__':
     fig, ax = plt.subplots()
     ax.plot(frames[-1])
     plt.show()
-
