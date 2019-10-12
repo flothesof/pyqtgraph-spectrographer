@@ -1,7 +1,9 @@
 pyqtgraph-spectrographer
 ========================
 
-This is a simple app to display a live spectrogram from microphone input.
+This is a simple app to display a live spectrogram from microphone input (including waveform and frequency domain).
+
+.. image:: assets/Screenshot 2019-10-12 at 12.07.19.png
 
 Installation
 ------------
