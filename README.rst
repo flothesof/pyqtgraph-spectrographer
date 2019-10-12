@@ -5,6 +5,7 @@ This is a simple app to display a live spectrogram from microphone input (includ
 
 .. image:: assets/Screenshot 2019-10-12 at 12.07.19.png
 
+
 Installation
 ------------
 
