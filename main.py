@@ -21,11 +21,12 @@ def generatePgColormap(cm_name):
     return lut
 
 
-CHUNKSIZE = 1024
+CHUNKSIZE = 2048
 SAMPLE_RATE = 44100
 TIME_VECTOR = np.arange(CHUNKSIZE) / SAMPLE_RATE
-N_FFT = 2048
+N_FFT = 4096
 FREQ_VECTOR = np.fft.rfftfreq(N_FFT, d=TIME_VECTOR[1] - TIME_VECTOR[0])
+WATERFALL_FRAMES = int(1000 * 2048 // N_FFT)
 
 recorder = MicrophoneRecorder(sample_rate=SAMPLE_RATE, chunksize=CHUNKSIZE)
 recorder.start()
@@ -66,13 +67,13 @@ fft_plot.setYRange(0, 2 ** 14 * CHUNKSIZE)
 fft_plot.setLabel('left', "Amplitude", units='A.U.')
 fft_plot.setLabel('bottom', "Frequency", units='Hz')
 
-waterfall_data = deque(maxlen=1000)
+waterfall_data = deque(maxlen=WATERFALL_FRAMES)
 
 
 def update_fft():
     global data, fft_curve, fft_plot
     if data.max() > 1:
-        X = np.abs(np.fft.rfft(data, n=N_FFT))
+        X = np.abs(np.fft.rfft(np.hanning(data.size) * data, n=N_FFT))
         fft_curve.setData(x=FREQ_VECTOR, y=X)
         waterfall_data.append(np.log10(X + 1e-12))
 
@@ -93,17 +94,18 @@ waterfall_image.setImage(image_data)
 lut = generatePgColormap('viridis')
 waterfall_image.setLookupTable(lut)
 # set scale: x in seconds, y in Hz
-waterfall_image.scale(CHUNKSIZE / SAMPLE_RATE, FREQ_VECTOR.max() / CHUNKSIZE)
+waterfall_image.scale(CHUNKSIZE / SAMPLE_RATE, FREQ_VECTOR.max() / N_FFT)
 
 
 def update_waterfall():
     global waterfall_data, waterfall_image
     arr = np.c_[waterfall_data]
-    if arr.ndim == 1:
-        arr = arr[:, np.newaxis]
-    max = arr.max()
-    min = max / 10
-    waterfall_image.setImage(arr, levels=(min, max))
+    if arr.size > 0:
+        if arr.ndim == 1:
+            arr = arr[:, np.newaxis]
+        max = arr.max()
+        min = max / 10
+        waterfall_image.setImage(arr, levels=(min, max))
 
 
 timer_waterfall = QtCore.QTimer()
