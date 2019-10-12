@@ -1,0 +1,10 @@
+name: spectrographer
+channels:
+  - conda-forge
+dependencies:
+  - python=3.7
+  - pyqt
+  - pip
+  - pip:
+    - pyaudio
+    - pyqtgraph
