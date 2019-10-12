@@ -39,6 +39,8 @@ waveform_plot.showGrid(x=True, y=True)
 waveform_plot.enableAutoRange('xy', False)
 waveform_plot.setXRange(TIME_VECTOR.min(), TIME_VECTOR.max())
 waveform_plot.setYRange(-2 ** 15 + 1, 2 ** 15)
+waveform_plot.setLabel('left', "Microphone signal", units='A.U.')
+waveform_plot.setLabel('bottom', "Time", units='s')
 curve = waveform_plot.plot(pen='y')
 
 
@@ -56,13 +58,13 @@ timer = QtCore.QTimer()
 timer.timeout.connect(update_waveform)
 timer.start(50)
 
-win.nextRow()
-
 fft_plot = win.addPlot(title='FFT plot')
 fft_curve = fft_plot.plot(pen='y')
 fft_plot.enableAutoRange('xy', False)
 fft_plot.setXRange(FREQ_VECTOR.min(), FREQ_VECTOR.max())
 fft_plot.setYRange(0, 2 ** 14 * CHUNKSIZE)
+fft_plot.setLabel('left', "Amplitude", units='A.U.')
+fft_plot.setLabel('bottom', "Frequency", units='Hz')
 
 waterfall_data = deque(maxlen=1000)
 
@@ -82,7 +84,9 @@ timer_fft.start(50)
 win.nextRow()
 
 image_data = np.random.rand(20, 20)
-waterfall_plot = win.addPlot(title='Waterfall plot')
+waterfall_plot = win.addPlot(title='Waterfall plot', colspan=2)
+waterfall_plot.setLabel('left', "Frequency", units='Hz')
+waterfall_plot.setLabel('bottom', "Time", units='s')
 waterfall_image = pg.ImageItem()
 waterfall_plot.addItem(waterfall_image)
 waterfall_image.setImage(image_data)
@@ -90,6 +94,7 @@ lut = generatePgColormap('viridis')
 waterfall_image.setLookupTable(lut)
 # set scale: x in seconds, y in Hz
 waterfall_image.scale(CHUNKSIZE / SAMPLE_RATE, FREQ_VECTOR.max() / CHUNKSIZE)
+
 
 def update_waterfall():
     global waterfall_data, waterfall_image
