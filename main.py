@@ -27,6 +27,7 @@ TIME_VECTOR = np.arange(CHUNKSIZE) / SAMPLE_RATE
 N_FFT = 4096
 FREQ_VECTOR = np.fft.rfftfreq(N_FFT, d=TIME_VECTOR[1] - TIME_VECTOR[0])
 WATERFALL_FRAMES = int(1000 * 2048 // N_FFT)
+TIMEOUT = TIME_VECTOR.max()
 
 recorder = MicrophoneRecorder(sample_rate=SAMPLE_RATE, chunksize=CHUNKSIZE)
 recorder.start()
@@ -57,11 +58,12 @@ def update_waveform():
 
 timer = QtCore.QTimer()
 timer.timeout.connect(update_waveform)
-timer.start(50)
+timer.start(TIMEOUT)
 
 fft_plot = win.addPlot(title='FFT plot')
 fft_curve = fft_plot.plot(pen='y')
 fft_plot.enableAutoRange('xy', False)
+fft_plot.showGrid(x=True, y=True)
 fft_plot.setXRange(FREQ_VECTOR.min(), FREQ_VECTOR.max())
 fft_plot.setYRange(0, 2 ** 14 * CHUNKSIZE)
 fft_plot.setLabel('left', "Amplitude", units='A.U.')
@@ -80,7 +82,7 @@ def update_fft():
 
 timer_fft = QtCore.QTimer()
 timer_fft.timeout.connect(update_fft)
-timer_fft.start(50)
+timer_fft.start(TIMEOUT)
 
 win.nextRow()
 
@@ -88,6 +90,7 @@ image_data = np.random.rand(20, 20)
 waterfall_plot = win.addPlot(title='Waterfall plot', colspan=2)
 waterfall_plot.setLabel('left', "Frequency", units='Hz')
 waterfall_plot.setLabel('bottom', "Time", units='s')
+waterfall_plot.setXRange(0, WATERFALL_FRAMES * TIME_VECTOR.max())
 waterfall_image = pg.ImageItem()
 waterfall_plot.addItem(waterfall_image)
 waterfall_image.setImage(image_data)
@@ -110,7 +113,7 @@ def update_waterfall():
 
 timer_waterfall = QtCore.QTimer()
 timer_waterfall.timeout.connect(update_waterfall)
-timer_waterfall.start(100)
+timer_waterfall.start(2 * TIMEOUT)
 
 # Start Qt event loop unless running in interactive mode or using pyside.
 if __name__ == '__main__':
