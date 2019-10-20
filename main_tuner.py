@@ -3,9 +3,7 @@
 Simple waveform recorder with f0 detection.
 """
 
-from collections import deque
 import numpy as np
-import matplotlib.pyplot as plt
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 from src.microphone import MicrophoneRecorder
@@ -24,7 +22,7 @@ recorder.start()
 
 win = pg.GraphicsWindow()
 win.resize(1000, 600)
-win.setWindowTitle('pyqtgraph spectrographer')
+win.setWindowTitle('simple tuner')
 
 waveform_plot = win.addPlot(title="Waveform")
 waveform_plot.showGrid(x=True, y=True)
@@ -65,6 +63,7 @@ fft_plot.addItem(vLine, ignoreBounds=True)
 label = pg.TextItem(anchor=(0, 1))
 fft_plot.addItem(label)
 
+
 def update_fft():
     global data, fft_curve, fft_plot, vLine
     if data.max() > 1:
@@ -75,6 +74,7 @@ def update_fft():
         f0 = time_domain_f0_autocorrelation(windowed_data, SAMPLE_RATE)
         vLine.setPos(f0)
         label.setText(f"estimated f0: {f0:.2f} Hz")
+
 
 timer_fft = QtCore.QTimer()
 timer_fft.timeout.connect(update_fft)
