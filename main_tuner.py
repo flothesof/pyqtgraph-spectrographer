@@ -7,10 +7,10 @@ import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 from src.microphone import MicrophoneRecorder
-from src.pitch_tracking import time_domain_f0_autocorrelation
+from src.pitch_tracking import time_domain_f0_autocorrelation, frequency_domain_f0_cepstrum
 
 CHUNKSIZE = 2048
-SAMPLE_RATE = 44100
+SAMPLE_RATE = 16000
 TIME_VECTOR = np.arange(CHUNKSIZE) / SAMPLE_RATE
 N_FFT = 4096
 FREQ_VECTOR = np.fft.rfftfreq(N_FFT, d=TIME_VECTOR[1] - TIME_VECTOR[0])
@@ -67,11 +67,13 @@ fft_plot.addItem(label)
 def update_fft():
     global data, fft_curve, fft_plot, vLine
     if data.max() > 1:
-        windowed_data = np.hanning(data.size) * data
+        windowed_data = np.hanning(data.size) * (data - data.mean())
         X = np.abs(np.fft.rfft(windowed_data, n=N_FFT))
         Xlog = 20 * np.log10(X + 1e-12)
         fft_curve.setData(x=FREQ_VECTOR, y=Xlog)
-        f0 = time_domain_f0_autocorrelation(windowed_data, SAMPLE_RATE)
+        # f0 = time_domain_f0_autocorrelation(windowed_data, SAMPLE_RATE)
+        spectrum = np.fft.rfft(windowed_data)
+        f0 = frequency_domain_f0_cepstrum(spectrum, SAMPLE_RATE)
         vLine.setPos(f0)
         label.setText(f"estimated f0: {f0:.2f} Hz")
 
