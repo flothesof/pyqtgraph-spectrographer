@@ -20,11 +20,19 @@ TIMEOUT = TIME_VECTOR.max()
 recorder = MicrophoneRecorder(sample_rate=SAMPLE_RATE, chunksize=CHUNKSIZE)
 recorder.start()
 
-win = pg.GraphicsWindow()
-win.resize(1000, 600)
-win.setWindowTitle('simple tuner')
+app = QtGui.QApplication([])
+w = QtGui.QWidget()
+hbox = QtGui.QHBoxLayout()
+label = QtGui.QLabel('Pitch-tracking algorithm:')
+algorithm_choice = QtGui.QComboBox()
+algorithm_choice.addItems(['autocorrelation', 'cepstrum'])
+hbox.addWidget(label)
+hbox.addWidget(algorithm_choice)
+hbox.addStretch()
 
-waveform_plot = win.addPlot(title="Waveform")
+
+plots_layout = pg.GraphicsLayoutWidget()
+waveform_plot = plots_layout.addPlot(title="Waveform")
 waveform_plot.showGrid(x=True, y=True)
 waveform_plot.enableAutoRange('xy', False)
 waveform_plot.setXRange(TIME_VECTOR.min(), TIME_VECTOR.max())
@@ -48,9 +56,9 @@ timer = QtCore.QTimer()
 timer.timeout.connect(update_waveform)
 timer.start(TIMEOUT)
 
-win.nextRow()
+plots_layout.nextRow()
 
-fft_plot = win.addPlot(title='FFT plot')
+fft_plot = plots_layout.addPlot(title='FFT plot')
 fft_curve = fft_plot.plot(pen='y')
 fft_plot.enableAutoRange('xy', False)
 fft_plot.showGrid(x=True, y=True)
@@ -71,9 +79,13 @@ def update_fft():
         X = np.abs(np.fft.rfft(windowed_data, n=N_FFT))
         Xlog = 20 * np.log10(X + 1e-12)
         fft_curve.setData(x=FREQ_VECTOR, y=Xlog)
-        # f0 = time_domain_f0_autocorrelation(windowed_data, SAMPLE_RATE)
-        spectrum = np.fft.rfft(windowed_data)
-        f0 = frequency_domain_f0_cepstrum(spectrum, SAMPLE_RATE)
+        if algorithm_choice.currentText() == 'autocorrelation':
+            f0 = time_domain_f0_autocorrelation(windowed_data, SAMPLE_RATE)
+        elif algorithm_choice.currentText() == 'cepstrum':
+            f0 = frequency_domain_f0_cepstrum(data, SAMPLE_RATE)
+        else:
+            print('Something is wrong. Could not perform f0 estimation.')
+            f0 = 0.
         vLine.setPos(f0)
         label.setText(f"estimated f0: {f0:.2f} Hz")
 
@@ -81,6 +93,12 @@ def update_fft():
 timer_fft = QtCore.QTimer()
 timer_fft.timeout.connect(update_fft)
 timer_fft.start(TIMEOUT)
+
+layout = QtGui.QVBoxLayout()
+w.setLayout(layout)
+layout.addLayout(hbox)
+layout.addWidget(plots_layout)
+w.show()
 
 # Start Qt event loop unless running in interactive mode or using pyside.
 if __name__ == '__main__':
