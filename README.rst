@@ -29,7 +29,7 @@ You can also install dependencies for this project in a virtualenv using :code:`
 >>> source venv/bin/activate
 >>> python3 -m pip install -r requirements.txt
 
-Note that on Ubuntu you might need to install the following packages beforehand: :code:`apt-get install python3-venv libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0`.
+Note that on Ubuntu you might need to install the following packages beforehand: :code:`apt-get install python3-venv libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 python3-pyqtgraph`.
 
 Usage
 -----
