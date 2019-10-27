@@ -10,7 +10,7 @@ from src.microphone import MicrophoneRecorder
 from src.pitch_tracking import time_domain_f0_autocorrelation, frequency_domain_f0_cepstrum
 
 CHUNKSIZE = 2048
-SAMPLE_RATE = 16000
+SAMPLE_RATE = 44100
 TIME_VECTOR = np.arange(CHUNKSIZE) / SAMPLE_RATE
 N_FFT = 4096
 FREQ_VECTOR = np.fft.rfftfreq(N_FFT, d=TIME_VECTOR[1] - TIME_VECTOR[0])
@@ -82,7 +82,7 @@ def update_fft():
         if algorithm_choice.currentText() == 'autocorrelation':
             f0 = time_domain_f0_autocorrelation(windowed_data, SAMPLE_RATE)
         elif algorithm_choice.currentText() == 'cepstrum':
-            f0 = frequency_domain_f0_cepstrum(data, SAMPLE_RATE)
+            f0 = frequency_domain_f0_cepstrum(data, SAMPLE_RATE, 60, 700)
         else:
             print('Something is wrong. Could not perform f0 estimation.')
             f0 = 0.

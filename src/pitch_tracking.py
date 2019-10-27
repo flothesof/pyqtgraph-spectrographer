@@ -8,7 +8,7 @@ import scipy.signal
 
 TEST_SAMPLE_FREQ = 22050
 TEST_FREQS = [82.1, 164.2, 233.5, 335.2, 440.5, 550.8]
-FMIN, FMAX = 75, 770
+FMIN, FMAX = 75, 3000
 
 
 def make_sine_wave(f0, sampling_frequency, frame_size, phase=0):
@@ -65,7 +65,7 @@ def time_domain_f0_autocorrelation(waveform, sampling_frequency, fmin=FMIN, fmax
 
 def frequency_domain_f0_cepstrum(waveform, sampling_frequency, fmin=FMIN, fmax=FMAX):
     """
-    Cepstrum based f0 identification.
+    Cepstrum based f0 identification. Expects waveform without windowing!
 
     For more information see https://en.wikipedia.org/wiki/Cepstrum.
 
