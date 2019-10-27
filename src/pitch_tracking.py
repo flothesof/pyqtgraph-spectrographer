@@ -7,7 +7,8 @@ import numpy as np
 import scipy.signal
 
 TEST_SAMPLE_FREQ = 22050
-TEST_FREQS = [82.1, 164.2, 440.5, 880.8]
+TEST_FREQS = [82.1, 164.2, 233.5, 335.2, 440.5, 550.8]
+FMIN, FMAX = 75, 770
 
 
 def make_sine_wave(f0, sampling_frequency, frame_size, phase=0):
@@ -39,7 +40,7 @@ def make_harmonic_wave(f0, sampling_frequency, frame_size, n_harmonics=10):
     return waveform
 
 
-def time_domain_f0_autocorrelation(waveform, sampling_frequency):
+def time_domain_f0_autocorrelation(waveform, sampling_frequency, fmin=FMIN, fmax=FMAX):
     """
     Computes f0 using time-domain autocorrelation.
 
@@ -50,12 +51,19 @@ def time_domain_f0_autocorrelation(waveform, sampling_frequency):
     """
     bins = np.arange(waveform.size) - waveform.size // 2
     corr = np.correlate(waveform, waveform, mode='same')
-    candidates = bins[scipy.signal.argrelmax(corr)]
-    candidate = candidates[candidates > 0][0]
+    # choose valid maxima only from those in the frequency range (fmin-fmax)
+    valid = ((1 / bins * sampling_frequency) >= fmin) & ((1 / bins * sampling_frequency) <= fmax)
+    valid_bins = bins[valid]
+    valid_corr = corr[valid]
+    peaks = scipy.signal.argrelmax(valid_corr)
+    candidates = valid_bins[peaks]
+    # take highest correlation peak candidate
+    amps = valid_corr[peaks]
+    candidate = candidates[np.argmax(amps)]
     return 1 / candidate * sampling_frequency
 
 
-def frequency_domain_f0_cepstrum(waveform, sampling_frequency, fmin=82, fmax=640):
+def frequency_domain_f0_cepstrum(waveform, sampling_frequency, fmin=FMIN, fmax=FMAX):
     """
     Cepstrum based f0 identification.
 
@@ -86,7 +94,7 @@ def frequency_domain_f0_cepstrum(waveform, sampling_frequency, fmin=82, fmax=640
 def test_autocorrelation():
     print('testing time_domain_f0_autocorrelation')
     for freq in TEST_FREQS:
-        waveform = make_sine_wave(freq, TEST_SAMPLE_FREQ, 2048)
+        waveform = make_harmonic_wave(freq, TEST_SAMPLE_FREQ, 2048, 40)
         f0 = time_domain_f0_autocorrelation(waveform, TEST_SAMPLE_FREQ)
         print(f'expected f0: {freq} - computed: {f0:.2f}')
 
@@ -102,32 +110,3 @@ def test_cepstrum():
 if __name__ == '__main__':
     test_autocorrelation()
     test_cepstrum()
-
-    freq = TEST_FREQS[2]
-    waveform = make_harmonic_wave(freq, TEST_SAMPLE_FREQ, 2048, 30)
-    waveform_before_spectrum = (waveform - waveform.mean()) * np.hamming(waveform.size)
-    spectrum = np.fft.rfft(waveform_before_spectrum)
-    dt = 1 / TEST_SAMPLE_FREQ
-    time_vector = np.arange(waveform.size) * dt
-    freq_vector = np.fft.rfftfreq(waveform_before_spectrum.size, d=dt)
-    log_spectrum = np.log(np.abs(spectrum) + 1e-12)
-    df = freq_vector[1] - freq_vector[0]
-    quefrency_vector = np.fft.fftfreq(n=log_spectrum.size, d=df)
-    cepstrum = np.fft.ifft(log_spectrum * np.hamming(log_spectrum.size))
-    maxi = scipy.signal.argrelmax(np.abs(cepstrum))
-    abs_cepstrum = np.abs(cepstrum)
-    f0_index = maxi[0][np.argmax(abs_cepstrum[maxi])]
-    f0 = f0_index / abs_cepstrum.size * TEST_SAMPLE_FREQ
-    import matplotlib.pyplot as plt
-
-    fig, ax = plt.subplots(nrows=4)
-    ax[0].plot(time_vector, waveform)
-    ax[0].set_title(f'f0 = {freq}')
-    ax[0].set_xlabel('time (s)')
-    ax[1].plot(freq_vector, np.abs(spectrum))
-    ax[1].set_xlabel('frequency (Hz)')
-    ax[2].plot(freq_vector, log_spectrum)
-    ax[2].set_xlabel('frequency (Hz)')
-    ax[3].plot(quefrency_vector, np.abs(cepstrum))
-    ax[3].plot(quefrency_vector[maxi[0]], np.abs(cepstrum)[maxi], 'o')
-    plt.tight_layout()
