@@ -97,7 +97,7 @@ waterfall_image.setImage(image_data)
 lut = generatePgColormap('viridis')
 waterfall_image.setLookupTable(lut)
 # set scale: x in seconds, y in Hz
-waterfall_image.scale(CHUNKSIZE / SAMPLE_RATE, FREQ_VECTOR.max() / N_FFT)
+waterfall_image.scale(CHUNKSIZE / SAMPLE_RATE, FREQ_VECTOR.max() * 2. / N_FFT)
 
 
 def update_waterfall():
@@ -115,7 +115,6 @@ timer_waterfall = QtCore.QTimer()
 timer_waterfall.timeout.connect(update_waterfall)
 timer_waterfall.start(2 * TIMEOUT)
 
-# Start Qt event loop unless running in interactive mode or using pyside.
 if __name__ == '__main__':
     import sys
 
