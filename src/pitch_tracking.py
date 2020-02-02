@@ -6,7 +6,7 @@ be perceived by the human ear.
 import numpy as np
 import scipy.signal
 
-TEST_SAMPLE_FREQ = 22050
+TEST_SAMPLE_FREQ = 44100
 TEST_FREQS = [82.1, 164.2, 233.5, 335.2, 440.5, 550.8]
 FMIN, FMAX = 75, 3000
 
@@ -81,7 +81,9 @@ def frequency_domain_f0_cepstrum(waveform, sampling_frequency, fmin=FMIN, fmax=F
     freq_vector = np.fft.rfftfreq(frame_size, d=dt)
     X = np.fft.rfft(windowed_signal)
     log_X = np.log(np.abs(X))
-    cepstrum = np.fft.rfft(log_X)
+    windowed_log_X = np.ones(log_X.size) * log_X
+    windowed_log_X -= windowed_log_X.mean()
+    cepstrum = np.fft.rfft(windowed_log_X)
     df = freq_vector[1] - freq_vector[0]
     quefrency_vector = np.fft.rfftfreq(log_X.size, df)
     # extract max-peak in cepstrum in valid region
@@ -96,7 +98,7 @@ def test_autocorrelation():
     for freq in TEST_FREQS:
         waveform = make_harmonic_wave(freq, TEST_SAMPLE_FREQ, 2048, 40)
         f0 = time_domain_f0_autocorrelation(waveform, TEST_SAMPLE_FREQ)
-        print(f'expected f0: {freq} - computed: {f0:.2f}')
+        print(f'expected f0: {freq} - computed: {f0:.2f} - delta {(freq - f0) / freq * 100:.1f} %')
 
 
 def test_cepstrum():
@@ -104,9 +106,9 @@ def test_cepstrum():
     for freq in TEST_FREQS:
         waveform = make_harmonic_wave(freq, TEST_SAMPLE_FREQ, 2048, 40)
         f0 = frequency_domain_f0_cepstrum(waveform, TEST_SAMPLE_FREQ)
-        print(f'expected f0: {freq} - computed: {f0:.2f}')
+        print(f'expected f0: {freq} - computed: {f0:.2f} - delta {(freq - f0) / freq * 100:.1f} %')
 
 
 if __name__ == '__main__':
-    test_autocorrelation()
+    #test_autocorrelation()
     test_cepstrum()

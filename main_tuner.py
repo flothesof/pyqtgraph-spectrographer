@@ -10,7 +10,7 @@ from src.microphone import MicrophoneRecorder
 from src.pitch_tracking import time_domain_f0_autocorrelation, frequency_domain_f0_cepstrum
 
 CHUNKSIZE = 2048
-SAMPLE_RATE = 44100
+SAMPLE_RATE = 22050
 TIME_VECTOR = np.arange(CHUNKSIZE) / SAMPLE_RATE
 N_FFT = 4096
 FREQ_VECTOR = np.fft.rfftfreq(N_FFT, d=TIME_VECTOR[1] - TIME_VECTOR[0])
