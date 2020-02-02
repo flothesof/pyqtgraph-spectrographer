@@ -28,6 +28,7 @@ N_FFT = 4096
 FREQ_VECTOR = np.fft.rfftfreq(N_FFT, d=TIME_VECTOR[1] - TIME_VECTOR[0])
 WATERFALL_FRAMES = int(1000 * 2048 // N_FFT)
 TIMEOUT = TIME_VECTOR.max()
+EPS = 1e-8
 
 recorder = MicrophoneRecorder(sample_rate=SAMPLE_RATE, chunksize=CHUNKSIZE)
 recorder.start()
@@ -40,7 +41,7 @@ waveform_plot = win.addPlot(title="Waveform")
 waveform_plot.showGrid(x=True, y=True)
 waveform_plot.enableAutoRange('xy', False)
 waveform_plot.setXRange(TIME_VECTOR.min(), TIME_VECTOR.max())
-waveform_plot.setYRange(-2 ** 15 + 1, 2 ** 15)
+waveform_plot.setYRange(-2 ** 15, 2 ** 15 - 1)
 waveform_plot.setLabel('left', "Microphone signal", units='A.U.')
 waveform_plot.setLabel('bottom', "Time", units='s')
 curve = waveform_plot.plot(pen='y')
@@ -65,7 +66,7 @@ fft_curve = fft_plot.plot(pen='y')
 fft_plot.enableAutoRange('xy', False)
 fft_plot.showGrid(x=True, y=True)
 fft_plot.setXRange(FREQ_VECTOR.min(), FREQ_VECTOR.max())
-fft_plot.setYRange(0, 2 ** 14 * CHUNKSIZE)
+fft_plot.setYRange(20 * np.log10(2 ** 11 * CHUNKSIZE) - 100, 20 * np.log10(2 ** 11 * CHUNKSIZE))
 fft_plot.setLabel('left', "Amplitude", units='A.U.')
 fft_plot.setLabel('bottom', "Frequency", units='Hz')
 
@@ -76,7 +77,8 @@ def update_fft():
     global data, fft_curve, fft_plot
     if data.max() > 1:
         X = np.abs(np.fft.rfft(np.hanning(data.size) * data, n=N_FFT))
-        fft_curve.setData(x=FREQ_VECTOR, y=X)
+        magn = 20 * np.log10(X + EPS)
+        fft_curve.setData(x=FREQ_VECTOR, y=magn)
         waterfall_data.append(np.log10(X + 1e-12))
 
 
