@@ -7,7 +7,7 @@ from collections import deque
 import numpy as np
 import matplotlib.pyplot as plt
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtCore, QtGui
+from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 from src.microphone import MicrophoneRecorder
 
 
@@ -27,17 +27,24 @@ TIME_VECTOR = np.arange(CHUNKSIZE) / SAMPLE_RATE
 N_FFT = 4096
 FREQ_VECTOR = np.fft.rfftfreq(N_FFT, d=TIME_VECTOR[1] - TIME_VECTOR[0])
 WATERFALL_FRAMES = int(1000 * 2048 // N_FFT)
-TIMEOUT = TIME_VECTOR.max()
+TIMEOUT = int(TIME_VECTOR.max())
 EPS = 1e-8
+
+
+app = pg.mkQApp()
 
 recorder = MicrophoneRecorder(sample_rate=SAMPLE_RATE, chunksize=CHUNKSIZE)
 recorder.start()
 
-win = pg.GraphicsWindow()
+win = QtWidgets.QMainWindow()
+cw = pg.GraphicsLayoutWidget()
+win.show()
 win.resize(1000, 600)
+win.setCentralWidget(cw)
 win.setWindowTitle('pyqtgraph spectrographer')
 
-waveform_plot = win.addPlot(title="Waveform")
+
+waveform_plot = cw.addPlot(title="Waveform")
 waveform_plot.showGrid(x=True, y=True)
 waveform_plot.enableAutoRange('xy', False)
 waveform_plot.setXRange(TIME_VECTOR.min(), TIME_VECTOR.max())
@@ -61,7 +68,7 @@ timer = QtCore.QTimer()
 timer.timeout.connect(update_waveform)
 timer.start(TIMEOUT)
 
-fft_plot = win.addPlot(title='FFT plot')
+fft_plot = cw.addPlot(title='FFT plot')
 fft_curve = fft_plot.plot(pen='y')
 fft_plot.enableAutoRange('xy', False)
 fft_plot.showGrid(x=True, y=True)
@@ -86,10 +93,10 @@ timer_fft = QtCore.QTimer()
 timer_fft.timeout.connect(update_fft)
 timer_fft.start(TIMEOUT)
 
-win.nextRow()
+cw.nextRow()
 
 image_data = np.random.rand(20, 20)
-waterfall_plot = win.addPlot(title='Waterfall plot', colspan=2)
+waterfall_plot = cw.addPlot(title='Waterfall plot', colspan=2)
 waterfall_plot.setLabel('left', "Frequency", units='Hz')
 waterfall_plot.setLabel('bottom', "Time", units='s')
 waterfall_plot.setXRange(0, WATERFALL_FRAMES * TIME_VECTOR.max())
@@ -99,7 +106,11 @@ waterfall_image.setImage(image_data)
 lut = generatePgColormap('viridis')
 waterfall_image.setLookupTable(lut)
 # set scale: x in seconds, y in Hz
-waterfall_image.scale(CHUNKSIZE / SAMPLE_RATE, FREQ_VECTOR.max() * 2. / N_FFT)
+scale_factor = CHUNKSIZE / SAMPLE_RATE, int(FREQ_VECTOR.max()) * 2. / N_FFT
+tr = QtGui.QTransform()
+tr.scale(*scale_factor)
+waterfall_image.setTransform(tr)
+#waterfall_image.scale(scale_factor)
 
 
 def update_waterfall():
@@ -119,6 +130,6 @@ timer_waterfall.start(2 * TIMEOUT)
 
 if __name__ == '__main__':
     import sys
-
-    if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
-        QtGui.QApplication.instance().exec_()
+    pg.exec()
+    #if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
+    #    QtGui.QApplication.instance().exec_()
