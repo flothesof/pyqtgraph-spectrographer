@@ -130,6 +130,5 @@ timer_waterfall.start(2 * TIMEOUT)
 
 if __name__ == '__main__':
     import sys
-    pg.exec()
-    #if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
-    #    QtGui.QApplication.instance().exec_()
+    if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
+        pg.exec()
